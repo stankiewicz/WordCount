@@ -13,26 +13,31 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class WordCount {
 
+// notice generic information - this mapper maps Text into pair of Text (key) and Int (value)
+// if you want to change output of mapper, remember to change input of reducer!
   public static class TokenizerMapper
        extends Mapper<Object, Text, Text, IntWritable>{
 
-    private final static IntWritable one = new IntWritable(1);
-    private Text word = new Text();
-
     public void map(Object key, Text value, Context context
                     ) throws IOException, InterruptedException {
-      StringTokenizer itr = new StringTokenizer(value.toString());
-      while (itr.hasMoreTokens()) {
-        word.set(itr.nextToken());
-        context.write(word, one);
-      }
+        Text word = new Text(); // can be object field, but I simplified it for training purpose
+        IntWritable one = new IntWritable(1); // can be static final, but I simplified it for training purpose
+        // Useful types: Text, IntWritable, DoubleWritable
+        String [] array = value.toString().split(" ");
+      
+        for(String element: array) {
+            word.set(element);
+            context.write(word, one);
+        }
     }
   }
 
+  // notice generic information - this reducer reduces Text (key) with list of Ints into pair of Text (key) and Int (value)
   public static class IntSumReducer
        extends Reducer<Text,IntWritable,Text,IntWritable> {
     private IntWritable result = new IntWritable();
 
+    //reduce function has as well information about what reducer receives (key is Text, values is a list of Ints)
     public void reduce(Text key, Iterable<IntWritable> values,
                        Context context
                        ) throws IOException, InterruptedException {
@@ -52,6 +57,7 @@ public class WordCount {
     job.setMapperClass(TokenizerMapper.class);
     job.setCombinerClass(IntSumReducer.class);
     job.setReducerClass(IntSumReducer.class);
+    // when changing reducer output, those lines below must match output types.
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(IntWritable.class);
     FileInputFormat.addInputPath(job, new Path(args[0]));
